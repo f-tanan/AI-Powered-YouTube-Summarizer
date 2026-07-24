@@ -6,16 +6,21 @@ from indexing import retrieve
 from llm_interface import get_llm
 from transcript import format_timestamp
 
+# Both prompts pin the output language explicitly. Without that instruction the
+# model answers an Arabic transcript in English, since the instructions
+# themselves are English.
 SUMMARY_PROMPT = PromptTemplate.from_template(
     "Summarize the following YouTube transcript as 3-5 concise bullet points "
     "covering its main ideas. Do not add information that is not in the "
-    "transcript.\n\nTranscript:\n{transcript}\n\nSummary:"
+    "transcript. Write the summary in the same language as the transcript.\n\n"
+    "Transcript:\n{transcript}\n\nSummary:"
 )
 
 QA_PROMPT = PromptTemplate.from_template(
     "Answer the question using only the transcript excerpts below. Each "
     "excerpt is labelled with its timestamp. If the excerpts do not contain "
-    "the answer, say that the video does not cover it.\n\n"
+    "the answer, say that the video does not cover it. Write the answer in the "
+    "same language as the question.\n\n"
     "Excerpts:\n{context}\n\nQuestion: {question}\n\nAnswer:"
 )
 

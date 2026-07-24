@@ -53,7 +53,11 @@ def ask_question(url, question):
 def build_ui():
     """Assemble the Gradio interface."""
     with gr.Blocks(title="YouTube Summarizer") as demo:
-        gr.Markdown("# YouTube Summarizer\nSummarize a video and ask questions about it.")
+        gr.Markdown(
+            "# YouTube Summarizer\nSummarize a video and ask questions about it. "
+            "English and Arabic videos are supported — answers come back in the "
+            "language you ask in."
+        )
 
         url = gr.Textbox(
             label="YouTube URL",

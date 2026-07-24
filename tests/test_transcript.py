@@ -1,10 +1,13 @@
 """Tests for URL parsing and transcript normalization."""
 
 import pytest
+from conftest import FakeTrack
 
 from transcript import (
     TranscriptError,
+    _base_language,
     _normalize,
+    _select,
     format_timestamp,
     get_transcript,
     get_video_id,
@@ -80,3 +83,41 @@ def test_transcript_text_has_no_scaffolding(snippets):
 )
 def test_format_timestamp(seconds, expected):
     assert format_timestamp(seconds) == expected
+
+
+@pytest.mark.parametrize(
+    ("code", "expected"),
+    [("ar", "ar"), ("ar-EG", "ar"), ("AR-SA", "ar"), ("en-US", "en"), ("zh_CN", "zh")],
+)
+def test_base_language_strips_region(code, expected):
+    assert _base_language(code) == expected
+
+
+def test_select_picks_arabic_when_no_english_exists():
+    tracks = [FakeTrack("fr", False), FakeTrack("ar", True)]
+    assert _select(tracks).language_code == "ar"
+
+
+def test_select_matches_arabic_region_variants():
+    assert _select([FakeTrack("ar-EG", True)]).language_code == "ar-EG"
+
+
+def test_select_prefers_english_over_arabic():
+    tracks = [FakeTrack("ar", False), FakeTrack("en", False)]
+    assert _select(tracks).language_code == "en"
+
+
+def test_select_prefers_manual_over_generated_within_a_language():
+    # The generated track comes first, so a first-match scan would take it.
+    tracks = [FakeTrack("ar", True), FakeTrack("ar", False)]
+    assert _select(tracks).is_generated is False
+
+
+def test_select_prefers_language_rank_over_manual():
+    # A generated English track still beats a manual Arabic one.
+    tracks = [FakeTrack("ar", False), FakeTrack("en", True)]
+    assert _select(tracks).language_code == "en"
+
+
+def test_select_returns_none_for_unsupported_languages():
+    assert _select([FakeTrack("fr", False), FakeTrack("de", True)]) is None

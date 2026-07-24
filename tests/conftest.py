@@ -33,3 +33,15 @@ class FakeSnippet:
 @pytest.fixture
 def fake_fetched(snippets):
     return [FakeSnippet(s["text"], s["start"]) for s in snippets]
+
+
+class FakeTrack:
+    """Mimics one entry of youtube_transcript_api's transcript list."""
+
+    def __init__(self, language_code, is_generated):
+        self.language_code = language_code
+        self.is_generated = is_generated
+
+    def __repr__(self):
+        kind = "auto" if self.is_generated else "manual"
+        return f"<{self.language_code} {kind}>"

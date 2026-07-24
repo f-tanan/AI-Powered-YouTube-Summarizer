@@ -5,6 +5,8 @@ import re
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import CouldNotRetrieveTranscript
 
+import config
+
 # Accepts the common YouTube link shapes: watch?v=, youtu.be/, /shorts/,
 # /embed/ and /live/, with or without extra query parameters.
 _VIDEO_ID_PATTERNS = (
@@ -35,13 +37,14 @@ def get_video_id(url):
 
 
 def get_transcript(url):
-    """Fetch the English transcript for a YouTube URL.
+    """Fetch a transcript for a YouTube URL in one of the supported languages.
 
-    Returns a list of {"text": str, "start": float} entries, preferring a
-    manually created transcript over an auto-generated one.
+    Returns a list of {"text": str, "start": float} entries. Languages are
+    tried in config.TRANSCRIPT_LANGUAGES order, and within a language a
+    manually created transcript beats an auto-generated one.
 
-    Raises TranscriptError if the URL is not a YouTube link, or if no English
-    transcript is available.
+    Raises TranscriptError if the URL is not a YouTube link, or if the video
+    has no transcript in a supported language.
     """
     video_id = get_video_id(url)
     if video_id is None:
@@ -58,23 +61,53 @@ def get_transcript(url):
             "Subtitles may be disabled, or the video may be private or age-restricted."
         ) from exc
 
-    fetched = None
+    chosen = _select(transcripts)
+    if chosen is None:
+        raise TranscriptError(
+            f"This video has no transcript in {_supported_languages()}."
+        )
+
+    return _normalize(chosen.fetch())
+
+
+def _base_language(language_code):
+    """Reduce a track's language code to its base tag: "ar-EG" -> "ar"."""
+    return language_code.lower().replace("_", "-").split("-")[0]
+
+
+def _select(transcripts, languages=None):
+    """Pick the best available transcript, or None if none is usable.
+
+    Ranks candidates by (language preference, auto-generated) and takes the
+    smallest. Sorting rather than short-circuiting on the first match matters
+    because the API yields tracks in arbitrary order, so an auto-generated
+    English track can appear before a manual one.
+    """
+    languages = languages or config.TRANSCRIPT_LANGUAGES
+
+    best = None
+    best_rank = None
+
     for t in transcripts:
-        if t.language_code != "en":
+        base = _base_language(t.language_code)
+        if base not in languages:
             continue
-        if t.is_generated:
-            # Fall back to the auto-generated track only if nothing better appears.
-            if fetched is None:
-                fetched = t.fetch()
-        else:
-            # A manually created transcript always wins.
-            fetched = t.fetch()
-            break
 
-    if fetched is None:
-        raise TranscriptError("This video has no English transcript.")
+        rank = (languages.index(base), t.is_generated)
+        if best_rank is None or rank < best_rank:
+            best, best_rank = t, rank
 
-    return _normalize(fetched)
+    return best
+
+
+def _supported_languages():
+    """Render the configured languages for an error message."""
+    names = [
+        config.LANGUAGE_NAMES.get(code, code) for code in config.TRANSCRIPT_LANGUAGES
+    ]
+    if len(names) == 1:
+        return names[0]
+    return f"{', '.join(names[:-1])} or {names[-1]}"
 
 
 def _normalize(fetched):
