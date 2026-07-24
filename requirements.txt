@@ -1,0 +1,17 @@
+# Transcript retrieval
+youtube-transcript-api==1.2.1
+
+# Vector store / embeddings index
+faiss-cpu==1.8.0
+
+# LangChain
+langchain==0.2.6
+langchain-community==0.2.6
+
+# IBM watsonx
+ibm-watsonx-ai==1.0.10
+langchain_ibm==0.1.8
+
+# UI
+gradio==4.44.1
+huggingface_hub>=0.19.3,<1.0
