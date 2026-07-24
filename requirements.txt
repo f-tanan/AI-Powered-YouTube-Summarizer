@@ -7,11 +7,21 @@ faiss-cpu==1.8.0
 # LangChain
 langchain==0.2.6
 langchain-community==0.2.6
+langchain-core==0.2.43
+langsmith==0.1.147
 
-# IBM watsonx
-ibm-watsonx-ai==1.0.10
-langchain_ibm==0.1.8
+# Local embeddings (CPU, no API quota)
+langchain-huggingface==0.0.3
+sentence-transformers==3.2.1
+transformers==4.46.3
+huggingface-hub==0.25.2
+
+# Google Gemini generation
+langchain-google-genai==1.0.10
+
+# Config
+python-dotenv==1.0.1
 
 # UI
 gradio==4.44.1
-huggingface_hub>=0.19.3,<1.0
+websockets==12.0
